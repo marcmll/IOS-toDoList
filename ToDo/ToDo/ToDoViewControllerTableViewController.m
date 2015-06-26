@@ -10,6 +10,7 @@
 
 #import "ToDoViewControllerTableViewController.h"
 #import "AddItemViewController.h"
+#import "detailedViewController.h"
 #import "ToDoList.h"
 #import "AppDelegate.h"
 
@@ -17,6 +18,7 @@
 
 @property (nonatomic, strong) NSMutableArray *todoList;
 @property (nonatomic, strong) NSFetchedResultsController *toDoListController;
+@property (nonatomic, strong) ToDoList *selectedToDoList;
 - (IBAction)unwindToList:(UIStoryboardSegue *)segue;
 
 @end
@@ -37,6 +39,11 @@
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.toDoListController performFetch:nil];
+}
+
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
@@ -49,7 +56,11 @@
 - (IBAction)saveItem:(UIStoryboardSegue *)segue {
     
     NSString *toDoListName = [[((AddItemViewController *)segue.sourceViewController) todoListName] text];
-    //ToDoList *toDoList = [];
+    ToDoList *toDoList = [NSEntityDescription insertNewObjectForEntityForName:@"ToDoList" inManagedObjectContext:MAINCONTEXT];
+    toDoList.name = toDoListName;
+    toDoList.rowId = @([[self.toDoListController fetchedObjects] count]+1);
+    [MAINCONTEXT save:nil];
+    [self.toDoListController performFetch:nil];
     [self.tableView reloadData];
 }
 
@@ -64,14 +75,16 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 #warning Incomplete method implementation.
     // Return the number of rows in the section.
-    return [self.todoList count];
+    return [[self.toDoListController fetchedObjects] count];
 }
 
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ToDoListCell" forIndexPath:indexPath];
     
-    cell.textLabel.text = [self.todoList objectAtIndex:indexPath.row];
+    ToDoList *toDoList = [self.toDoListController objectAtIndexPath:indexPath];
+    
+    cell.textLabel.text = [toDoList name];
     
     return cell;
 }
@@ -90,9 +103,15 @@
     return YES;
 }
 
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    //Even if the method is empty you should be seeing both rearrangement icon and animation.
+    
+    self.selectedToDoList = [[self toDoListController] objectAtIndexPath:indexPath];
+    
+    [self performSegueWithIdentifier:@"detailedSegue" sender:self];
+    
 }
 
 
@@ -101,7 +120,10 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         // Delete the row from the data source
-        [self.todoList removeObjectAtIndex:indexPath.row];
+        ToDoList *toDoList = [self.toDoListController objectAtIndexPath:indexPath];
+        [MAINCONTEXT deleteObject:toDoList];
+        [MAINCONTEXT save:nil];
+        [self.toDoListController performFetch:nil];
         [tableView reloadData]; // tell table to refresh now
     } else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
@@ -128,11 +150,25 @@
 }
 
 
-/*
+
 // Override to support rearranging the table view.
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath {
+    
+    NSMutableArray *allObjects = [[self.toDoListController fetchedObjects] mutableCopy];
+    ToDoList *toDoList = [self.toDoListController objectAtIndexPath:fromIndexPath];
+    
+    [allObjects removeObject:toDoList];
+    [allObjects insertObject:toDoList atIndex:toIndexPath.row];
+    [allObjects enumerateObjectsUsingBlock:^(ToDoList *object, NSUInteger idx, BOOL *stop) {
+        object.rowId = @(idx + 1);
+    }
+     ];
+    
+    [MAINCONTEXT save:nil];
+    [self.toDoListController performFetch:nil];
+    
 }
-*/
+
 
 /*
 // Override to support conditional rearranging of the table view.
@@ -165,6 +201,12 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
+    if ([sender isEqual:self]) {
+        detailedViewController *detailedViewController = segue.destinationViewController;
+        detailedViewController.toDoList = [self selectedToDoList];
+    }
+    
+    
 }
 
 #pragma mark - NSFetchResultCrontroller
@@ -173,6 +215,16 @@
     if(!_toDoListController){
         NSFetchRequest *request = [[NSFetchRequest alloc] init];
         NSEntityDescription *entity = [NSEntityDescription entityForName:@"ToDoList" inManagedObjectContext:MAINCONTEXT];
+        request.entity = entity;
+        
+        NSSortDescriptor *sortIdentifier = [[NSSortDescriptor alloc] initWithKey:@"rowId" ascending:YES];
+        
+        [request setSortDescriptors:@[sortIdentifier]];
+        
+        NSFetchedResultsController *fetchController = [[NSFetchedResultsController alloc] initWithFetchRequest:request managedObjectContext:MAINCONTEXT sectionNameKeyPath:nil cacheName:@"toDoList"];
+        
+        _toDoListController = fetchController;
+//        _toDoListController.delegate = self;
     }
     return _toDoListController;
 }

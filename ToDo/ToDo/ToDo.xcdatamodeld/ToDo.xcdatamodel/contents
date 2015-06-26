@@ -2,6 +2,7 @@
 <model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="7701" systemVersion="14A389" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
     <entity name="ToDoList" representedClassName="ToDoList" syncable="YES">
         <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="rowId" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
         <relationship name="items" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ToDoListItem" inverseName="toDoList" inverseEntity="ToDoListItem" syncable="YES"/>
     </entity>
     <entity name="ToDoListItem" representedClassName="ToDoListItem" syncable="YES">
@@ -10,7 +11,7 @@
         <relationship name="toDoList" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ToDoList" inverseName="items" inverseEntity="ToDoList" syncable="YES"/>
     </entity>
     <elements>
-        <element name="ToDoList" positionX="-81" positionY="18" width="128" height="73"/>
+        <element name="ToDoList" positionX="-81" positionY="18" width="128" height="90"/>
         <element name="ToDoListItem" positionX="205" positionY="90" width="128" height="90"/>
     </elements>
 </model>

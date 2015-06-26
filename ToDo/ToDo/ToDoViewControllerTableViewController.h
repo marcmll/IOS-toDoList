@@ -8,6 +8,10 @@
 
 #import <UIKit/UIKit.h>
 
+@class ToDoList;
+
 @interface ToDoViewControllerTableViewController : UITableViewController
+
+@property (nonatomic, readonly) ToDoList *selectedToDoList;
 
 @end

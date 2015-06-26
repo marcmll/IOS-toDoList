@@ -13,6 +13,7 @@
 @implementation ToDoList
 
 @dynamic name;
+@dynamic rowId;
 @dynamic items;
 
 @end

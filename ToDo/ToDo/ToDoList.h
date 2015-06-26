@@ -14,6 +14,7 @@
 @interface ToDoList : NSManagedObject
 
 @property (nonatomic, retain) NSString * name;
+@property (nonatomic, retain) NSNumber * rowId;
 @property (nonatomic, retain) NSSet *items;
 @end
 
