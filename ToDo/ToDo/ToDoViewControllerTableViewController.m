@@ -8,6 +8,8 @@
 
 #define MAINCONTEXT [(AppDelegate *)[[UIApplication sharedApplication] delegate] managedObjectContext]
 
+#import <Parse/Parse.h>
+
 #import "ToDoViewControllerTableViewController.h"
 #import "AddItemViewController.h"
 #import "detailedViewController.h"
@@ -27,6 +29,11 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    PFUser *currentUser = [PFUser currentUser];
+    if (!currentUser) {
+        [self performSegueWithIdentifier:@"noUser" sender:self];
+    }
     
     self.todoList = [[NSMutableArray alloc] init];
     
@@ -201,9 +208,11 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    if ([sender isEqual:self]) {
+    if ([segue.identifier isEqualToString:@"detailedSegue"]) {
         detailedViewController *detailedViewController = segue.destinationViewController;
         detailedViewController.toDoList = [self selectedToDoList];
+    }else if ([segue.identifier isEqualToString:@"noUser"]){
+        
     }
     
     

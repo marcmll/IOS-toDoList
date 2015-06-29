@@ -60,7 +60,15 @@
         
     }else{
         cell = [tableView dequeueReusableCellWithIdentifier:@"itemNameCell" forIndexPath:indexPath];
-        cell.textLabel.text = [[[[[self toDoList] items] allObjects] objectAtIndex:indexPath.row - 1] name];
+        ToDoListItem *item = [[[[self toDoList] items] allObjects] objectAtIndex:indexPath.row - 1];
+        cell.textLabel.text = [item name];
+        if([[item isDone]boolValue]){
+            cell.imageView.image = [UIImage imageNamed:@"checkboxTicked"];
+            cell.textLabel.textColor = [UIColor grayColor];
+        }else{
+            cell.imageView.image = [UIImage imageNamed:@"checkboxUnticked"];
+            cell.textLabel.textColor = [UIColor blackColor];
+        }
     }
     
     
@@ -72,6 +80,19 @@
 }
 
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    ToDoListItem *item = [[[[self toDoList] items] allObjects] objectAtIndex:indexPath.row - 1];
+    if([[item isDone]boolValue]){
+        item.isDone = @(0);
+    }else{
+        item.isDone = @(1);
+    }
+    [[item managedObjectContext] save:nil];
+    [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic]; // tell table to refresh now
+}
+
 
 // Override to support conditional editing of the table view.
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -80,17 +101,19 @@
 }
 
 
-/*
+
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         // Delete the row from the data source
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        ToDoListItem *toDoListItem = [[[self.toDoList items] allObjects] objectAtIndex:indexPath.row - 1];
+        [[toDoListItem managedObjectContext] deleteObject:toDoListItem];
+        [[toDoListItem managedObjectContext] save:nil];
+        [tableView reloadData]; // tell table to refresh now
     } else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
     }   
 }
-*/
 
 /*
 // Override to support rearranging the table view.
