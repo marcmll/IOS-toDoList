@@ -21,6 +21,9 @@
 @property (nonatomic, strong) NSMutableArray *todoList;
 @property (nonatomic, strong) NSFetchedResultsController *toDoListController;
 @property (nonatomic, strong) ToDoList *selectedToDoList;
+
+@property (nonatomic, strong) UIBarButtonItem *addList;
+@property (nonatomic, strong) UIBarButtonItem *logout;
 - (IBAction)unwindToList:(UIStoryboardSegue *)segue;
 
 @end
@@ -30,8 +33,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    _addList = self.navigationItem.rightBarButtonItem;
+    _logout = [[UIBarButtonItem alloc] initWithTitle:@"Logout" style:UIAlertViewStyleDefault target:self action:@selector(logout:)];
+    
     PFUser *currentUser = [PFUser currentUser];
-    if (!currentUser) {
+    if (currentUser) {
+        
+        
+        
+        
+    }else{
         [self performSegueWithIdentifier:@"noUser" sender:self];
     }
     
@@ -48,7 +59,11 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    [self.toDoListController performFetch:nil];
+//    [self.toDoListController performFetch:nil];
+    PFUser *currentUser = [PFUser currentUser];
+    if(currentUser){
+    [self fetchList];
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -61,14 +76,31 @@
 }
 
 - (IBAction)saveItem:(UIStoryboardSegue *)segue {
-    
+
     NSString *toDoListName = [[((AddItemViewController *)segue.sourceViewController) todoListName] text];
-    ToDoList *toDoList = [NSEntityDescription insertNewObjectForEntityForName:@"ToDoList" inManagedObjectContext:MAINCONTEXT];
-    toDoList.name = toDoListName;
-    toDoList.rowId = @([[self.toDoListController fetchedObjects] count]+1);
-    [MAINCONTEXT save:nil];
-    [self.toDoListController performFetch:nil];
-    [self.tableView reloadData];
+        //CoreData
+//    ToDoList *toDoList = [NSEntityDescription insertNewObjectForEntityForName:@"ToDoList" inManagedObjectContext:MAINCONTEXT];
+//    toDoList.name = toDoListName;
+//    toDoList.rowId = @([[self.toDoListController fetchedObjects] count]+1);
+//    [MAINCONTEXT save:nil];
+//    [self.toDoListController performFetch:nil];
+//    [self.tableView reloadData];
+    
+    PFUser *currentUser = [PFUser currentUser];
+    NSString *userId = currentUser.objectId;
+    
+    PFObject *list = [PFObject objectWithClassName:@"List"];
+    list[@"name"] = toDoListName;
+    list[@"userId"] = userId;
+    list[@"rowId"] = @([self.todoList count]+1);
+    [list saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+        if (succeeded) {
+            [self fetchList];
+        } else {
+            NSString *errorString = [error userInfo][@"error"];
+            NSLog(errorString);
+        }
+    }];
 }
 
 #pragma mark - Table view data source
@@ -82,16 +114,23 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 #warning Incomplete method implementation.
     // Return the number of rows in the section.
-    return [[self.toDoListController fetchedObjects] count];
+    //CoreData
+    //return [[self.toDoListController fetchedObjects] count];
+    //Parse
+    return [self.todoList count];
 }
 
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+
+    
+//    ToDoList *toDoList = [self.toDoListController objectAtIndexPath:indexPath];
+    
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ToDoListCell" forIndexPath:indexPath];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     
-    ToDoList *toDoList = [self.toDoListController objectAtIndexPath:indexPath];
-    
-    cell.textLabel.text = [toDoList name];
+    PFObject *todoList = [self.todoList objectAtIndex:indexPath.row];
+    cell.textLabel.text = [todoList valueForKey:@"name"];
     
     return cell;
 }
@@ -115,7 +154,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     
-    self.selectedToDoList = [[self toDoListController] objectAtIndexPath:indexPath];
+    self.selectedToDoList = [self.todoList objectAtIndex:indexPath.row];
     
     [self performSegueWithIdentifier:@"detailedSegue" sender:self];
     
@@ -127,10 +166,11 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         // Delete the row from the data source
-        ToDoList *toDoList = [self.toDoListController objectAtIndexPath:indexPath];
-        [MAINCONTEXT deleteObject:toDoList];
-        [MAINCONTEXT save:nil];
-        [self.toDoListController performFetch:nil];
+        PFObject *toDoList = [self.todoList objectAtIndex:indexPath.row];
+        [toDoList deleteInBackground];
+        [self deleteItemsForListWithId:toDoList.objectId];
+        
+        [self.todoList removeObject:toDoList];
         [tableView reloadData]; // tell table to refresh now
     } else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
@@ -142,8 +182,10 @@
     
     if ([self.tableView isEditing]) {
         // If the tableView is already in edit mode, turn it off. Also change the title of the button to reflect the intended verb (‘Edit’, in this case).
-        [self.tableView setEditing:NO animated:NO];
+        [self.tableView setEditing:NO animated:YES];
         [self.navigationItem.leftBarButtonItem setTitle:@"Edit"];
+        self.navigationItem.rightBarButtonItem = _addList;
+        [self saveListInBackground];
         [self.tableView reloadData];
     }
     else {
@@ -152,6 +194,7 @@
         
         [self.tableView setEditing:YES animated:YES];
         [self.navigationItem.leftBarButtonItem setTitle:@"Done"];
+        self.navigationItem.rightBarButtonItem = _logout;
         [self.tableView reloadData];
     }
 }
@@ -161,18 +204,19 @@
 // Override to support rearranging the table view.
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath {
     
-    NSMutableArray *allObjects = [[self.toDoListController fetchedObjects] mutableCopy];
-    ToDoList *toDoList = [self.toDoListController objectAtIndexPath:fromIndexPath];
+    NSMutableArray *allObjects = [self.todoList mutableCopy];
+    PFObject *toDoList = [self.todoList objectAtIndex:fromIndexPath.row];
     
     [allObjects removeObject:toDoList];
     [allObjects insertObject:toDoList atIndex:toIndexPath.row];
-    [allObjects enumerateObjectsUsingBlock:^(ToDoList *object, NSUInteger idx, BOOL *stop) {
-        object.rowId = @(idx + 1);
-    }
-     ];
+    [allObjects enumerateObjectsUsingBlock:^(PFObject *object, NSUInteger idx, BOOL *stop) {
+        object[@"rowId"] = @(idx+1);
+    }];
     
-    [MAINCONTEXT save:nil];
-    [self.toDoListController performFetch:nil];
+    self.todoList = allObjects;
+    
+//    [MAINCONTEXT save:nil];
+//    [self.toDoListController performFetch:nil];
     
 }
 
@@ -212,7 +256,8 @@
         detailedViewController *detailedViewController = segue.destinationViewController;
         detailedViewController.toDoList = [self selectedToDoList];
     }else if ([segue.identifier isEqualToString:@"noUser"]){
-        
+        UIViewController *signIn = segue.destinationViewController;
+        signIn.navigationItem.hidesBackButton = YES;
     }
     
     
@@ -237,6 +282,63 @@
     }
     return _toDoListController;
 }
+
+#pragma mark - Parse Helper
+
+- (void)fetchList
+{
+    PFUser *currentUser = [PFUser currentUser];
+    
+    NSString *userId = currentUser.objectId;
+    
+    PFQuery *query = [PFQuery queryWithClassName:@"List"];
+    [query whereKey:@"userId" equalTo:userId];
+    [query orderByAscending:@"rowId"];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if (!error) {
+            self.todoList = [objects mutableCopy];
+            [self.tableView reloadData];
+        } else {
+            // Log details of the failure
+            NSLog(@"Error: %@ %@", error, [error userInfo]);
+        }
+    }];
+}
+
+- (void)saveListInBackground
+{
+    [self.todoList enumerateObjectsUsingBlock:^(PFObject *obj, NSUInteger idx, BOOL *stop) {
+        [obj saveInBackground];
+    }];
+}
+
+- (void)deleteItemsForListWithId:(NSString *)objectId
+{
+    PFQuery *query = [PFQuery queryWithClassName:@"Items"];
+    [query whereKey:@"listId" equalTo:objectId];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if (!error) {
+            [objects enumerateObjectsUsingBlock:^(PFObject *listItem, NSUInteger idx, BOOL *stop) {
+                [listItem deleteInBackground];
+            }];
+        } else {
+            // Log details of the failure
+            NSLog(@"Error: %@ %@", error, [error userInfo]);
+        }
+    }];
+
+}
+
+- (void)logout:(id)sender {
+
+    [PFUser logOut];
+    PFUser *currentUser = [PFUser currentUser];
+    self.todoList = nil;
+    
+    [self performSegueWithIdentifier:@"noUser" sender:self];
+    
+}
+
 
 
 @end

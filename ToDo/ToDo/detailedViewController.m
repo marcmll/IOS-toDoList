@@ -11,6 +11,8 @@
 
 @interface detailedViewController () <UITextFieldDelegate>
 
+@property (nonatomic, strong) NSMutableArray *toDoListItems;
+
 @end
 
 @implementation detailedViewController
@@ -22,14 +24,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    // Uncomment the following line to preserve selection between presentations.
-    // self.clearsSelectionOnViewWillAppear = NO;
     
-    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+    [self fetchItems];
     
     
-    [self.navigationItem setTitle:self.toDoList.name];
+    [self.navigationItem setTitle:[self.toDoList valueForKey: @"name"]];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -48,7 +47,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 #warning Incomplete method implementation.
     // Return the number of rows in the section.
-    return [[[self toDoList] items] count] + 1;
+    return [self.toDoListItems count] + 1;
 }
 
 
@@ -60,9 +59,9 @@
         
     }else{
         cell = [tableView dequeueReusableCellWithIdentifier:@"itemNameCell" forIndexPath:indexPath];
-        ToDoListItem *item = [[[[self toDoList] items] allObjects] objectAtIndex:indexPath.row - 1];
-        cell.textLabel.text = [item name];
-        if([[item isDone]boolValue]){
+        PFObject *item = [self.toDoListItems objectAtIndex:indexPath.row - 1];
+        cell.textLabel.text = [item valueForKey:@"name"];
+        if([[item valueForKey:@"isDone"]boolValue]){
             cell.imageView.image = [UIImage imageNamed:@"checkboxTicked"];
             cell.textLabel.textColor = [UIColor grayColor];
         }else{
@@ -83,13 +82,24 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     
-    ToDoListItem *item = [[[[self toDoList] items] allObjects] objectAtIndex:indexPath.row - 1];
-    if([[item isDone]boolValue]){
-        item.isDone = @(0);
+    PFObject *item = [self.toDoListItems objectAtIndex:indexPath.row - 1];
+    
+    if([[item valueForKey:@"isDone"]boolValue]){
+        [item setValue:@NO forKey:@"isDone"];
     }else{
-        item.isDone = @(1);
+        [item setValue:@YES forKey:@"isDone"];
     }
-    [[item managedObjectContext] save:nil];
+
+    [item saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+        if (succeeded) {
+            NSLog(@"saved");
+        } else {
+            NSString *errorString = [error userInfo][@"error"];
+            NSLog(@"%@",errorString);
+        }
+    }];
+    
+    //[[item managedObjectContext] save:nil];
     [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic]; // tell table to refresh now
 }
 
@@ -106,10 +116,11 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         // Delete the row from the data source
-        ToDoListItem *toDoListItem = [[[self.toDoList items] allObjects] objectAtIndex:indexPath.row - 1];
-        [[toDoListItem managedObjectContext] deleteObject:toDoListItem];
-        [[toDoListItem managedObjectContext] save:nil];
-        [tableView reloadData]; // tell table to refresh now
+        PFObject *toDoListItem = [self.toDoListItems objectAtIndex:indexPath.row - 1];
+//        [[toDoListItem managedObjectContext] deleteObject:toDoListItem];
+//        [[toDoListItem managedObjectContext] save:nil];
+        [toDoListItem deleteInBackground];
+        [self fetchItems];
     } else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
     }   
@@ -140,16 +151,49 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
     NSString *itemName = textField.text;
-    ToDoListItem *toDoListItem = [NSEntityDescription insertNewObjectForEntityForName:@"ToDoListItem" inManagedObjectContext:[[self toDoList] managedObjectContext]];
-    toDoListItem.name = itemName;
-    [[self toDoList] addItemsObject:toDoListItem];
-    [[[self toDoList] managedObjectContext] save:nil];
+//    ToDoListItem *toDoListItem = [NSEntityDescription insertNewObjectForEntityForName:@"ToDoListItem" inManagedObjectContext:[[self toDoList] managedObjectContext]];
+//    toDoListItem.name = itemName;
+//    [[self toDoList] addItemsObject:toDoListItem];
+//    [[[self toDoList] managedObjectContext] save:nil];
+    
+    PFObject *item = [PFObject objectWithClassName:@"Items"];
+    item[@"name"] = itemName;
+    item[@"isDone"] = @NO;
+    item[@"listId"] = [self.toDoList valueForKey:@"objectId"];
+    item[@"rowId"] = @([self.toDoListItems count]+1);
+    [item saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+        if (succeeded) {
+            [self fetchItems];
+        } else {
+            NSString *errorString = [error userInfo][@"error"];
+            NSLog(@"%@",errorString);
+        }
+    }];
+    
     [self.tableView reloadData];
     textField.text = @"";
     
     [textField resignFirstResponder];
     
     return YES;
+}
+
+- (void)fetchItems
+{
+    
+    NSString *listId = [self.toDoList valueForKey:@"objectId"];
+    
+    PFQuery *query = [PFQuery queryWithClassName:@"Items"];
+    [query whereKey:@"listId" equalTo:listId];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if (!error) {
+            self.toDoListItems = [objects mutableCopy];
+            [self.tableView reloadData];
+        } else {
+            // Log details of the failure
+            NSLog(@"Error: %@ %@", error, [error userInfo]);
+        }
+    }];
 }
 
 

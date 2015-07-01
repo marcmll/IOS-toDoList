@@ -10,6 +10,7 @@
 		A03106E01B397BB1003A8F08 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A03106DE1B397BB1003A8F08 /* Main.storyboard */; };
 		A03106E31B397C16003A8F08 /* AddItemViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A03106E21B397C16003A8F08 /* AddItemViewController.m */; };
 		A03656B41B3C2CB600B57ED4 /* detailedViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A03656B31B3C2CB600B57ED4 /* detailedViewController.m */; };
+		A06630B61B429FFD00DD830C /* signInController.m in Sources */ = {isa = PBXBuildFile; fileRef = A06630B51B429FFD00DD830C /* signInController.m */; };
 		A09590CB1B41686400110F2F /* Bolts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A09590C51B41686400110F2F /* Bolts.framework */; };
 		A09590CC1B41686400110F2F /* Parse.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A09590C61B41686400110F2F /* Parse.framework */; };
 		A09590CD1B41686400110F2F /* ParseCrashReporting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A09590C71B41686400110F2F /* ParseCrashReporting.framework */; };
@@ -57,6 +58,8 @@
 		A03106E21B397C16003A8F08 /* AddItemViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddItemViewController.m; sourceTree = "<group>"; };
 		A03656B21B3C2CB600B57ED4 /* detailedViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = detailedViewController.h; sourceTree = "<group>"; };
 		A03656B31B3C2CB600B57ED4 /* detailedViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = detailedViewController.m; sourceTree = "<group>"; };
+		A06630B41B429FFD00DD830C /* signInController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = signInController.h; sourceTree = "<group>"; };
+		A06630B51B429FFD00DD830C /* signInController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = signInController.m; sourceTree = "<group>"; };
 		A09590BE1B41448C00110F2F /* ToDo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = ToDo.entitlements; sourceTree = "<group>"; };
 		A09590C51B41686400110F2F /* Bolts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Bolts.framework; path = "ToDo/Frameworks/parse-library/Bolts.framework"; sourceTree = "<group>"; };
 		A09590C61B41686400110F2F /* Parse.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Parse.framework; path = "ToDo/Frameworks/parse-library/Parse.framework"; sourceTree = "<group>"; };
@@ -200,6 +203,8 @@
 				A03106E21B397C16003A8F08 /* AddItemViewController.m */,
 				A03656B21B3C2CB600B57ED4 /* detailedViewController.h */,
 				A03656B31B3C2CB600B57ED4 /* detailedViewController.m */,
+				A06630B41B429FFD00DD830C /* signInController.h */,
+				A06630B51B429FFD00DD830C /* signInController.m */,
 			);
 			path = ToDo;
 			sourceTree = "<group>";
@@ -350,6 +355,7 @@
 				A03656B41B3C2CB600B57ED4 /* detailedViewController.m in Sources */,
 				A0B095341B39403C00AC1945 /* ToDoViewControllerTableViewController.m in Sources */,
 				A03106E31B397C16003A8F08 /* AddItemViewController.m in Sources */,
+				A06630B61B429FFD00DD830C /* signInController.m in Sources */,
 				A0D502351B3AB8A30068B194 /* ToDoListItem.m in Sources */,
 				A0B0950E1B393D9100AC1945 /* AppDelegate.m in Sources */,
 				A0B095111B393D9100AC1945 /* ToDo.xcdatamodeld in Sources */,

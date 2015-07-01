@@ -7,10 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "ToDoList.h"
+#import <Parse/Parse.h>
+//#import "ToDoList.h"
 
 @interface detailedViewController : UITableViewController
 
-@property (nonatomic, strong) ToDoList *toDoList;
+//@property (nonatomic, strong) ToDoList *toDoList;
+@property (nonatomic, strong) PFObject *toDoList;
 
 @end
